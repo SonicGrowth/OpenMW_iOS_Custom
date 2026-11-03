@@ -1,0 +1,11 @@
+# Local upstream checkout, dependencies, products and downloaded game assets
+/build/
+/.cache/
+/deps/
+/Data/
+/Morrowind/
+/*.ipa
+/*.app
+*.p12
+*.mobileprovision
+.DS_Store
