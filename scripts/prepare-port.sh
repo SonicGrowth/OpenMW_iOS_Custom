@@ -33,6 +33,18 @@ if [[ ${COPY_TO_ROOT} -eq 1 ]]; then
   # so the original upstream build workflow's relative paths still work.
   # Protect this downstream README and custom workflow from replacement.
   rsync -a --exclude='.git' --exclude='README.md' --exclude='.github/' "${SRC_DIR}/" "${ROOT}/"
+
+  # Upstream's test_multiconfig_manifests and cheap YAML validation require
+  # these original workflow files at their standard paths. Copy them only
+  # into the ephemeral CI checkout: keep our custom ios-beta.yml unchanged.
+  mkdir -p "${ROOT}/.github/workflows"
+  for workflow in ios.yml ios-fast.yml; do
+    test -s "${SRC_DIR}/.github/workflows/${workflow}" || {
+      echo "Missing pinned upstream workflow: ${workflow}" >&2
+      exit 1
+    }
+    cp "${SRC_DIR}/.github/workflows/${workflow}" "${ROOT}/.github/workflows/${workflow}"
+  done
 fi
 
 echo "Verified pinned OpenMW iOS port: ${SOURCE_COMMIT}"
