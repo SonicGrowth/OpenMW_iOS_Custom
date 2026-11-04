@@ -13,6 +13,10 @@ This is a **pinned-upstream + patch overlay** repository, rather than a duplicat
 - OpenMW engine 0.51.0 revision: `f4bec41444214a7903bebd178389ca22ca13f646`.
 - Native iOS build target: arm64, minimum iOS 16.3, SDL2 + GL4ES.
 
+## Reusable Codex build skill
+
+The [OpenMW iOS build skill](.agents/skills/openmw-ios-build/SKILL.md) captures lessons from our two-hour cold baseline. Its [fast preflight](.agents/skills/openmw-ios-build/scripts/preflight.sh) and the [Quick OpenMW CI checks](.github/workflows/quick-checks.yml) detect source and touch-test problems without rebuilding the iPhone app. The existing full build keeps using safe GitHub caches; warm rebuild speed has not yet been measured.
+
 ## Development flow
 
 1. Read `AGENTS.md`, `PROJECT.md`, `docs/source-baseline.md`, and the relevant issue.
