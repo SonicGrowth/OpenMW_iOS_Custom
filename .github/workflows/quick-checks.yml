@@ -8,6 +8,7 @@ on:
       - 'AGENTS.md'
       - 'scripts/**'
       - 'custom/patches/**'
+      - 'custom/tests/**'
       - '.github/workflows/**'
       - 'docs/feature-001-controller-mode.md'
   push:
@@ -17,6 +18,7 @@ on:
       - 'AGENTS.md'
       - 'scripts/**'
       - 'custom/patches/**'
+      - 'custom/tests/**'
       - '.github/workflows/**'
       - 'docs/feature-001-controller-mode.md'
 

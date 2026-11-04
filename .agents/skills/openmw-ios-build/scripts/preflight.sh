@@ -29,6 +29,9 @@ if [[ "${MODE}" == "--with-source" ]]; then
   test -s build/upstream-port/.github/workflows/ios-fast.yml
   git -C build/upstream-port diff --check
   python3 -m unittest discover -s build/upstream-port/validation -p 'test_ios_touch_controls.py' -v
+  if [[ -d custom/tests ]]; then
+    python3 -m unittest discover -s custom/tests -p 'test_*.py' -v
+  fi
 else
   echo "Source-backed checks were not run (--offline)."
 fi
