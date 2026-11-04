@@ -1,0 +1,164 @@
+diff --git a/ios/openmw_ios_touch_controls.mm b/ios/openmw_ios_touch_controls.mm
+--- a/ios/openmw_ios_touch_controls.mm
++++ b/ios/openmw_ios_touch_controls.mm
+@@ -30,6 +30,7 @@
+     constexpr NSTimeInterval MenuLongPressSeconds = 0.75;
+     constexpr CGFloat EditorTouchSlop = 14.f;
+     NSString* const TouchProfileDefaultsKey = @"OpenMWIOSTouchProfileV1";
++    NSString* const TouchControlsDisabledKey = @"OpenMWIOSTouchControlsDisabledV1";
+ 
+     std::uintptr_t touchId(UITouch* touch)
+     {
+@@ -279,6 +280,8 @@
+     std::array<bool, OpenMWIOS::Touch::ActionCount> _pressedActions;
+     std::array<bool, 4> _fallbackDirections;
+     CADisplayLink* _displayLink;
++    UILongPressGestureRecognizer* _recoveryHold;
++    BOOL _touchControlsDisabled;
+     BOOL _gameplayMode;
+     BOOL _inputReady;
+     int _diagnosticBudget;
+@@ -314,6 +317,14 @@
+         _fallbackDirections.fill(false);
+         _gameplayMode = NO;
+         _inputReady = NO;
++        _touchControlsDisabled = [NSUserDefaults.standardUserDefaults boolForKey:TouchControlsDisabledKey];
++        _recoveryHold = [[UILongPressGestureRecognizer alloc] initWithTarget:self
++                                                                      action:@selector(recoveryHoldActivated:)];
++        _recoveryHold.minimumPressDuration = 2.0;
++        _recoveryHold.allowableMovement = 32.f;
++        _recoveryHold.cancelsTouchesInView = NO;
++        _recoveryHold.enabled = _touchControlsDisabled;
++        [self addGestureRecognizer:_recoveryHold];
+         _diagnosticBudget = DiagnosticBudget;
+         _editing = NO;
+         _selectedControl = -1;
+@@ -336,6 +347,7 @@
+ - (void)dealloc
+ {
+     [_displayLink invalidate];
++    [_recoveryHold release];
+     [self releaseAllInputs];
+     if (_virtualController)
+     {
+@@ -360,7 +372,7 @@
+     (void)event;
+     if (!_inputReady)
+         return NO;
++    if (_editing || _touchControlsDisabled)
+-    if (_editing)
+         return YES;
+     if (_gameplayMode && !_editing)
+         return YES;
+@@ -463,8 +475,8 @@
+     const CGRect toolbar = [self editorToolbarRect];
+     if (!CGRectContainsPoint(toolbar, point))
+         return -1;
++    const CGFloat itemWidth = CGRectGetWidth(toolbar) / 6.f;
++    return MIN(5, MAX(0, static_cast<NSInteger>((point.x - CGRectGetMinX(toolbar)) / itemWidth)));
+-    const CGFloat itemWidth = CGRectGetWidth(toolbar) / 5.f;
+-    return MIN(4, MAX(0, static_cast<NSInteger>((point.x - CGRectGetMinX(toolbar)) / itemWidth)));
+ }
+ 
+ - (void)enterEditor
+@@ -474,6 +486,7 @@
+     _consumedMenuLongPressId = triggeringTouch;
+     _editorSnapshot = _profile.customized ? _profile : OpenMWIOS::Touch::profileFromLayout(_layout);
+     _editing = YES;
++    _recoveryHold.enabled = NO;
+     _selectedControl = static_cast<NSInteger>(Action::Pause);
+     _resetArmed = NO;
+     _resetApplied = NO;
+@@ -491,6 +504,7 @@
+         [self rebuildLayout];
+     }
+     _editing = NO;
++    _recoveryHold.enabled = _touchControlsDisabled;
+     _selectedControl = -1;
+     _editorTouchId = 0;
+     _resetArmed = NO;
+@@ -543,10 +557,30 @@
+         case 4:
+             [self leaveEditorSaving:NO];
+             return;
++        case 5:
++            _touchControlsDisabled = !_touchControlsDisabled;
++            [NSUserDefaults.standardUserDefaults setBool:_touchControlsDisabled forKey:TouchControlsDisabledKey];
++            if (_touchControlsDisabled)
++                [self releaseAllInputs];
++            // The editor stays touchable. Recovery is enabled only after leaving it.
++            _recoveryHold.enabled = _touchControlsDisabled && !_editing;
++            [self diagnose:"touch_controls_toggle"
++                     detail:_touchControlsDisabled ? @"state=off;recovery=hold-anywhere-2s"
++                                                    : @"state=on"];
++            break;
+     }
+     [self setNeedsDisplay];
+ }
+ 
++- (void)recoveryHoldActivated:(UILongPressGestureRecognizer*)recognizer
++{
++    if (recognizer.state == UIGestureRecognizerStateBegan && _touchControlsDisabled && !_editing && _inputReady)
++    {
++        [self enterEditor];
++        [self diagnose:"touch_controls_recovery" detail:@"state=editor-opened;gesture=hold-anywhere-2s"];
++    }
++}
++
+ - (void)diagnose:(const char*)milestone detail:(NSString*)detail
+ {
+     if (_diagnosticBudget <= 0)
+@@ -717,6 +751,9 @@
+ - (void)touchesBegan:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
+ {
+     (void)event;
++    // Duke-style preview: when hidden, consume touch input rather than pass it to the game.
++    if (_touchControlsDisabled && !_editing)
++        return;
+     for (UITouch* touch in touches)
+     {
+         const CGPoint location = [touch locationInView:self];
+@@ -809,6 +846,8 @@
+ - (void)touchesMoved:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
+ {
+     (void)event;
++    if (_touchControlsDisabled && !_editing)
++        return;
+     for (UITouch* touch in touches)
+     {
+         const CGPoint location = [touch locationInView:self];
+@@ -874,6 +913,8 @@
+ 
+ - (void)finishTouches:(NSSet<UITouch*>*)touches cancelled:(BOOL)cancelled
+ {
++    if (_touchControlsDisabled && !_editing)
++        return;
+     for (UITouch* touch in touches)
+     {
+         const std::uintptr_t identifier = touchId(touch);
+@@ -937,6 +978,8 @@
+ - (void)drawRect:(CGRect)rect
+ {
+     (void)rect;
++    if (_touchControlsDisabled && !_editing)
++        return;
+     CGContextRef context = UIGraphicsGetCurrentContext();
+     if (!context)
+         return;
+@@ -1045,6 +1088,7 @@
+             @"DONE",
+             _resetApplied ? @"UNDO" : (_resetArmed ? @"RESET?" : @"RESET"),
+             @"CANCEL",
++            _touchControlsDisabled ? @"SHOW PAD" : @"HIDE PAD",
+         ];
+         const CGFloat itemWidth = CGRectGetWidth(toolbar) / titles.count;
+         NSDictionary* toolbarAttributes = @{
+@@ -1059,7 +1103,7 @@
+                                    CGRectGetMidY(toolbar) - size.height * 0.5f)
+                     withAttributes:toolbarAttributes];
+         }
++        NSString* help = @"Drag to move, edge dot to resize. When hidden, hold anywhere for 2s to edit.";
+-        NSString* help = @"Drag a control to move. Drag its edge dot to resize. Long-press MENU to edit.";
+         NSDictionary* helpAttributes = @{
+             NSFontAttributeName : [UIFont systemFontOfSize:12.f],
+             NSForegroundColorAttributeName : [UIColor colorWithWhite:1.f alpha:0.9f],
