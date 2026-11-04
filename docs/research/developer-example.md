@@ -13,6 +13,25 @@ The Reddit reply pointed to **eDukeiOS (Duke Nukem 3D / Ion Fury)**, not Morrowi
 
 The patch adds `_touchControlsDisabled`, persists it via `NSUserDefaults` with key `eDukeiOS.touchControls.disabled`, and offers a **Touch Controls On/Off** button in the touch editor. When disabled outside the editor, `drawRect:` skips painting the virtual buttons and `touchesBegan:` stops forwarding gameplay touches. Crucially, a **two-second long-press gesture anywhere on the screen** still opens the editor, enabling controls to be turned back on. This does not change the hardware controller input backend.
 
+## Important gap: Duke does **not** establish native menu tapping when controls are hidden
+
+Inspected complete `EDuke32Controls.mm` at feature commit `9b0b9fdd` on 5 November 2026:
+
+- The controls view is a full-screen `UIView` installed through `[window addSubview:controls]`; there is **no** `pointInside:withEvent:` or `hitTest:withEvent:` override in the file.
+- When disabled, `touchesBegan:` returns immediately for every ordinary touch outside editing. The two-second `UILongPressGestureRecognizer` continues to work anywhere. Its `cancelsTouchesInView = NO` setting does **not** send taps to the underlying sibling game view.
+- Duke's visible-control GUI path synthesizes `PushKey(SDL_SCANCODE_RETURN)` for a short tap or `PushSwipeKey` for a swipe. Once `touchesBegan:` returns early, the touch tracking that triggers those actions is never started.
+- Neither the release notes nor the feature code proves that tap-to-select in-game menus works in this hidden mode; the release states physical iPhone/Xbox testing was pending.
+
+Apple confirms that hit-testing chooses the frontmost eligible view even when its visual content is transparent: [UIView hitTest:withEvent:](https://developer.apple.com/documentation/uikit/uiview/hittest%28_%3Awith%3A%29?language=objc).
+
+**Conclusion:** Reuse Duke's preference, editor switch, hidden-drawing check and long-press concept. **Do not reuse its unconditional touch suppression for OpenMW.**
+
+### OpenMW menu-passthrough implementation hypothesis
+
+OpenMW Build 67 already uses `pointInside:withEvent:` to let most GUI touches reach its underlying SDL/game view when the game cursor is enabled. Preserve that; ensure the hidden-state overlay **does not intercept menu taps, inventory selections, dialogue choices, scrolling, or OK/Cancel**.
+
+If we let the overlay be hit-test-transparent, its own recognizer cannot observe those ignored touches. Investigate installing a **non-cancelling long-press recognizer on an appropriate common ancestor/host view** for editor recovery, so quick menu taps still reach the game. This proposal needs real-device testing in both gameplay and menus. Check whether SDL gameplay treats passed-through taps as attack or use before finalising.
+
 ## Safe adaptation to pinned OpenMW Build 67
 
 OpenMW's `ios/openmw_ios_touch_controls.mm` also uses a UIKit overlay but has its **own** Pause-long-press arbitration, a five-item toolbar, and an SDL virtual controller. Its code is not directly compatible with eDukeiOS.
