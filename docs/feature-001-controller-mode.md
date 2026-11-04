@@ -10,8 +10,10 @@ Adapt the developer's documented [eDukeiOS implementation](research/developer-ex
 
 - Add a persistent **Touch Controls On/Off** action to the existing OpenMW editor (long-press Pause to open).
 - Default touch controls to **On**.
-- With controls Off outside editing, draw no virtual buttons and forward no regular game-touch input.
+- With controls Off outside editing, draw no virtual gamepad buttons/joystick and do not dispatch virtual joystick, gamepad actions, movement or look gestures from the overlay. **Do not disable normal touchscreen interaction with the actual Morrowind interface.**
 - Maintain a reliable **hold anywhere for two seconds** recovery gesture to reopen the editor, even with the Xbox controller disconnected.
+- **Menu input must keep working:** Morrowind inventory, dialogue, journal, settings, save/load and confirmation dialogs must still receive native taps and scrolling while virtual controls are hidden. The overlay's existing `pointInside:withEvent:` already passes most GUI touches to the underlying SDL view; preserve that passthrough. The existing gameplay-mode hit-test covers the whole screen, so do **not** naively set `self.hidden = YES` or add an unconditional `touchesBegan: return` without designing for both GUI passthrough and recovery.
+- A suggested division to validate: while editing, capture editor touches; while in GUI, let ordinary touches reach the underlying game; while in gameplay, suppress virtual gamepad actions and still support a recovery long-press. The gesture recognizer must not interfere with quick menu taps or swipes.
 - Release pressed SDL virtual controller inputs before switching Off; don't leave movement/attack stuck.
 - Preserve game HUD, menus, Xbox controller bindings, spells, save files and other gameplay.
 - Record on-device test results and extend `validation/test_ios_touch_controls.py`.
@@ -22,9 +24,10 @@ Consider automatic hiding on **physical** controller connection and restoring on
 ## Acceptance criteria
 - [ ] Milestone 0: unchanged beta builds and runs.
 - [ ] Editor toggle and persistent preference work across restarts.
-- [ ] When Off, no touch buttons are drawn or normal gameplay touch inputs sent.
+- [ ] When Off, no touch buttons are drawn and no **virtual gamepad** actions are generated, but normal menu taps and scrolling still reach Morrowind.
 - [ ] Long-press anywhere restores editor; touch can be switched On with no controller attached.
-- [ ] Existing controller and menu behaviour remains functional.
+- [ ] Xbox controller gameplay remains functional; with the virtual controls hidden, finger taps select inventory items, dialogue responses, OK/Cancel and settings; menu swipe/scroll works.
+- [ ] Editor recovery is possible with the controller disconnected and does not steal menu taps.
 - [ ] Tests cover switching, persistence, touch suppression and recovery.
 - [ ] Feature passes iPhone 15 Pro / Xbox controller testing before merge.
 
