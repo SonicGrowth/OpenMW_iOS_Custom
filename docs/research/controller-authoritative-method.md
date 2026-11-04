@@ -24,6 +24,8 @@ These are published **expert references**, not proof that any specific patch wor
 
 ## Architecture decision to validate before implementation
 
+The developer's directly relevant manual-toggle implementation is now documented in [developer-example.md](developer-example.md). The physical-controller detection spikes below concern **phase two** and should not delay a simple manual toggle.
+
 **Desired scope:** Only change visibility and/or touch-interaction handling in the iOS overlay; leave engine gameplay, save format, controller button mappings and renderer untouched.
 
 **Spike A — identify a real physical controller:** Prototype a read-only diagnostic check of connected gamepads. Compare SDL enumeration (e.g. game-controller status and `SDL_JoystickIsVirtual(index)`) with Apple's `GCController` connection notifications on real iOS hardware. Do **not** use `SDL_NumJoysticks() > 0` alone or `GCController.controllers.count > 0` without checking virtual devices. Confirm whether the SDL virtual joystick appears separately from Apple's `GCController` registry and whether both accurately follow an Xbox controller's Bluetooth state.
@@ -39,7 +41,7 @@ The controller presence check needs to handle *hot-plug changes* even when `_inp
 
 **Spike C — transition lifecycle:** On switching to controller-only mode, safely release any held virtual touch inputs, then hide the overlay's visuals/touch interception. On disconnect, restore the overlay (including normal pause/editor access), request redraw, and re-evaluate after app foreground/background transitions. All UIKit view updates must happen on the main thread. Missing or ambiguous device status should fail safe to visible controls.
 
-**Implementation order:** First implement **automatic visibility on physical connect/disconnect** (one small feature); only then add an optional manually controlled setting and persistence in a second small reviewable change. The first phase should not allow a persistent no-controller mode that traps the player without touch input.
+**Revised implementation order (after developer clarification):** First adapt the developer's actual eDukeiOS-style **manual persistent Show/Hide switch**, preserving a long-press-anywhere recovery path, as described in [developer-example.md](developer-example.md). Only after that works should we consider optional automatic visibility on physical controller connection/disconnection as a separate feature. The controller-detection research below applies to the optional later phase.
 
 ## Test matrix / acceptance gates
 
@@ -66,4 +68,4 @@ Automated tests should verify the state-decision logic and that the UIKit adapte
 
 ## Status and next step
 
-No code has been written for Feature 001 yet. After [Milestone 0](https://github.com/SonicGrowth/OpenMW_iOS_Custom/issues/1) passes, implement Spike A and its diagnostic tests as a narrowly scoped feature branch. Capture on-device evidence before choosing the final detection source.
+No code has been written for Feature 001 yet. After [Milestone 0](https://github.com/SonicGrowth/OpenMW_iOS_Custom/issues/1) passes, implement the manual hide/show toggle and safe recovery gesture in its own feature branch. Refer to [developer-example.md](developer-example.md). Physical controller detection is optional follow-up work, not a requirement for the manual toggle.
