@@ -1,0 +1,35 @@
+name: Quick OpenMW CI checks
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.agents/skills/openmw-ios-build/**'
+      - 'AGENTS.md'
+      - 'scripts/**'
+      - 'custom/patches/**'
+      - '.github/workflows/**'
+      - 'docs/feature-001-controller-mode.md'
+  push:
+    branches: [main]
+    paths:
+      - '.agents/skills/openmw-ios-build/**'
+      - 'AGENTS.md'
+      - 'scripts/**'
+      - 'custom/patches/**'
+      - '.github/workflows/**'
+      - 'docs/feature-001-controller-mode.md'
+
+permissions:
+  contents: read
+
+jobs:
+  source-and-touch-tests:
+    name: Validate pinned source, patches and touch model (no Xcode)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Source-backed fast preflight
+        run: bash .agents/skills/openmw-ios-build/scripts/preflight.sh --with-source
