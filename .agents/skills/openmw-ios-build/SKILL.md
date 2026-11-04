@@ -47,6 +47,6 @@ GitHub also runs [Quick OpenMW CI checks](../../../.github/workflows/quick-check
 
 ## Boundaries
 
-Read `docs/research/developer-example.md` for the real eDukeiOS touch toggle pattern, but never paste incompatible engine code blindly. Do not bundle Morrowind data, signing keys, or personal saves. A green GitHub badge proves compilation and package verification, **not** working gameplay. Follow `docs/iphone-test-checklist.md` for hardware validation.
+For touch-control features, read the developer's [actual eDukeiOS implementation](https://github.com/arjunkl/eDukeiOS/pull/10) and `docs/research/developer-example.md` when present (currently in [research PR #5](https://github.com/SonicGrowth/OpenMW_iOS_Custom/pull/5)); never paste incompatible engine code blindly. Do not bundle Morrowind data, signing keys, or personal saves. A green GitHub badge proves compilation and package verification, **not** working gameplay. Follow `docs/iphone-test-checklist.md` for hardware validation.
 
 A skill is a reusable procedure; **it does not automatically accelerate the compiler**. Speed comes from avoiding unnecessary full builds, maintaining safe caches and verifying work cheaply first.
