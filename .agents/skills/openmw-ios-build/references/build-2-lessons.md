@@ -32,7 +32,7 @@ Approximate wall-time distribution from build logs:
 ### Repeatable procedure
 
 1. Docs-only: no full compile.
-2. Patch, script or workflow change: run [Quick OpenMW CI checks](../../../.github/workflows/quick-checks.yml) on Ubuntu, including pinned source preparation and upstream touch-model tests.
+2. Patch, script or workflow change: run [Quick OpenMW CI checks](../../../../.github/workflows/quick-checks.yml) on Ubuntu, including pinned source preparation and upstream touch-model tests.
 3. On reviewable feature milestone: manually run `ios-beta.yml` with benchmark mode `none` and capture cache-hit status.
 4. Only close an iPhone feature after physical-device tests. Report cache hits/misses and stage timing with each meaningful run.
 
