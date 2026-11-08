@@ -1,0 +1,20 @@
+diff --git a/patches/openmw/0017-ios-draw-gamepad-menu-pointer.patch b/patches/openmw/0017-ios-draw-gamepad-menu-pointer.patch
+new file mode 100644
+--- /dev/null
++++ b/patches/openmw/0017-ios-draw-gamepad-menu-pointer.patch
+@@ -0,0 +1,15 @@
++diff --git a/apps/openmw/mwgui/windowmanagerimp.cpp b/apps/openmw/mwgui/windowmanagerimp.cpp
++--- a/apps/openmw/mwgui/windowmanagerimp.cpp
+++++ b/apps/openmw/mwgui/windowmanagerimp.cpp
++@@ -995,6 +995,11 @@
++     void WindowManager::update(float frameDuration)
++     {
+++        // MyGUI positions its software pointer at the same hotspot used for hover and clicks.
+++        const auto input = MWBase::Environment::get().getInputManager();
+++        MyGUI::PointerManager::getInstance().setVisible(
+++            getCursorVisible() && input->joystickLastUsed() && input->isGamepadGuiCursorEnabled());
+++
++         handleScheduledMessageBoxes();
++ 
++         bool gameRunning
++             = MWBase::Environment::get().getStateManager()->getState() != MWBase::StateManager::State_NoGame;
