@@ -10,7 +10,7 @@ new file mode 100644
 +     void WindowManager::update(float frameDuration)
 +     {
 ++        // MyGUI positions its software pointer at the same hotspot used for hover and clicks.
-++        auto* input = MWBase::Environment::get().getInputManager();
+++        const auto input = MWBase::Environment::get().getInputManager();
 ++        MyGUI::PointerManager::getInstance().setVisible(
 ++            getCursorVisible() && input->joystickLastUsed() && input->isGamepadGuiCursorEnabled());
 ++
